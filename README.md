@@ -1,0 +1,2 @@
+# Szamitogepi_Grafika_Baba_Levente_HLFA5R
+ Szamotogepi_Grfika_Repo
