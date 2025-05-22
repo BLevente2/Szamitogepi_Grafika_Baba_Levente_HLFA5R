@@ -1,3 +1,5 @@
+/* src/app.c */
+
 #include "app.h"
 
 #ifdef _WIN32
@@ -78,11 +80,11 @@ void init_app(App* app,int width,int height){
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_FOG);
     glFogi (GL_FOG_MODE ,GL_LINEAR);
-    GLfloat fogC[4]={0.529f,0.808f,0.922f,1.0f};
+    const GLfloat fogC[4]={0.529f,0.808f,0.922f,1.0f};
     glFogfv(GL_FOG_COLOR,fogC);
     glFogf (GL_FOG_START,20.0f);
     glFogf (GL_FOG_END  ,100.0f);
-    glClearColor(0.529f,0.808f,0.922f,1.0f);
+    glClearColor(fogC[0],fogC[1],fogC[2],1.0f);
 
     app->quit   = false;
     app->state  = STATE_MENU;
@@ -100,9 +102,9 @@ void handle_app_events(App* app,SDL_Event* e){
 
     if(e->type==SDL_WINDOWEVENT && e->window.event==SDL_WINDOWEVENT_RESIZED){
         reshape(e->window.data1,e->window.data2);
-        init_menu   (&app->menu     ,e->window.data1,e->window.data2);
-        init_gameover(&app->gameover ,e->window.data1,e->window.data2);
-        init_info   (&app->info      ,e->window.data1,e->window.data2);
+        init_menu     (&app->menu    ,e->window.data1,e->window.data2);
+        init_gameover (&app->gameover,e->window.data1,e->window.data2);
+        init_info     (&app->info    ,e->window.data1,e->window.data2);
     }
 
     if(app->state==STATE_PLAYING && e->type==SDL_MOUSEWHEEL){
@@ -125,6 +127,7 @@ void handle_app_events(App* app,SDL_Event* e){
         else if(k==SDLK_s||k==SDLK_DOWN)         adjust_camera_angle(-0.05f);
         else if(k==SDLK_PLUS||k==SDLK_KP_PLUS)   adjust_camera_radius(+1.0f);
         else if(k==SDLK_MINUS||k==SDLK_KP_MINUS) adjust_camera_radius(-1.0f);
+        /* Q/E fényerő-váltás el lett távolítva */
     }
 }
 
@@ -148,7 +151,12 @@ void update_app(App* app){
 
 /* ------------------------------------------------ render ---------- */
 void render_app(App* app){
+    /* állandó ég + köd szín */
+    const GLfloat fogC[4] = {0.529f,0.808f,0.922f,1.0f};
+    glClearColor(fogC[0],fogC[1],fogC[2],1.0f);
+    glFogfv(GL_FOG_COLOR,fogC);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
     apply_camera();
 
     int w,h; SDL_GetWindowSize(app->window,&w,&h);
@@ -164,26 +172,32 @@ void render_app(App* app){
         render_info(&app->info,w,h);
     }
     else if(app->state==STATE_GAMEOVER){
-        render_gameover(&app->gameover,w,h,app->scene.player.score);
+        render_gameover(&app->gameover,w,h,
+                        app->scene.player.score,
+                        app->scene.player.coins);
     }
 
     SDL_GL_SwapWindow(app->window);
 }
 
-/* ------------------------------------------------ HUD score ------- */
+/* ------------------------------------------------ HUD score & coins ------- */
 void draw_score(const App* app){
     int w,h; SDL_GetWindowSize(app->window,&w,&h);
 
-    char buf[32];
-    sprintf(buf,"%ld",app->scene.player.score);
-
-    int textW = (int)strlen(buf)*24;   /* becsült szélesség */
+    char scoreBuf[32];
+    sprintf(scoreBuf,"%ld",app->scene.player.score);
+    int textW = (int)strlen(scoreBuf)*24;
 
     GLboolean depthWas = glIsEnabled(GL_DEPTH_TEST);
     if(depthWas) glDisable(GL_DEPTH_TEST);
 
     glColor3f(0.0f,0.0f,0.0f);
-    render_text(buf,w,h,(w - textW)*0.5f,50.0f);  /* 50 px a tetejétől */
+    render_text(scoreBuf,w,h,(w - textW)*0.5f,50.0f);
+
+    char coinBuf[32];
+    sprintf(coinBuf,"Coins: %ld",app->scene.player.coins);
+    glColor3f(1.0f,0.84f,0.0f);          /* arany szín – nem skálázzuk fényerővel */
+    render_text(coinBuf,w,h,w-200,50.0f);
 
     if(depthWas) glEnable(GL_DEPTH_TEST);
 }

@@ -11,6 +11,7 @@ void init_player(Player* p,
     Color red = {1.0f, 0.0f, 0.0f};
     init_rectangular_prism(&p->box, cubeSize, cubeSize, cubeSize, red, startPos);
     p->score               = 0;
+    p->coins               = 0;                // coin-ok száma kezdetben nulla
     p->lateralSpeed        = lateralSpeed;
     p->forwardSpeed        = 0.0f;
     p->maxForwardSpeed     = maxForwardSpeed;
@@ -19,11 +20,15 @@ void init_player(Player* p,
 
 void update_player(Player* p, double dt)
 {
+    // Előremeneti sebesség frissítése
     p->forwardSpeed += p->forwardAcceleration * (float)dt;
     if (p->forwardSpeed > p->maxForwardSpeed)
         p->forwardSpeed = p->maxForwardSpeed;
+
+    // Mozgás előre
     p->box.position.x += p->forwardSpeed * (float)dt;
 
+    // Oldalirányú mozgatás balra/jobbra
     const Uint8* keys = SDL_GetKeyboardState(NULL);
     float delta = p->lateralSpeed * (float)dt;
     if (keys[SDL_SCANCODE_LEFT]  || keys[SDL_SCANCODE_A])

@@ -5,15 +5,19 @@
 #include "player.h"
 #include "ground.h"
 #include "obstacle.h"
+#include "coin.h"
 
 #define INITIAL_OBSTACLE_REGION 100.0f
 
 typedef struct {
-    Ground   ground;
-    Player   player;
+    Ground    ground;
+    Player    player;
     Obstacle* obstacles;
     int       obstacleCount;
     float     nextObstacleX;
+    Coin*     coins;
+    int       coinCount;
+    float     nextCoinX;
 } Scene;
 
 void init_scene(Scene* s);

@@ -2,6 +2,7 @@
 #include "rectangular_prism.h"
 #include "player.h"
 #include "obstacle.h"
+#include "coin.h"
 #include "ground.h"
 
 #include <stdlib.h>
@@ -9,9 +10,6 @@
 #include <math.h>
 #include <time.h>
 
-/* ------------------------------------------------ segédfüggvények --- */
-
-/* Egyszerű AABB–AABB metszésvizsgálat két téglatest között                */
 static bool aabb_intersect(const RectangularPrism* a,
                            const RectangularPrism* b)
 {
@@ -23,9 +21,8 @@ static bool aabb_intersect(const RectangularPrism* a,
                (a->size.z + b->size.z) * 0.5f;
 }
 
-/* Játékos–akadály ütközés ellenőrzése                                     */
-static bool check_player_obstacle_collision(const Player*    p,
-                                            const Obstacle*  o)
+static bool check_player_obstacle_collision(const Player* p,
+                                            const Obstacle* o)
 {
     return aabb_intersect(&p->box, &o->box);
 }
@@ -37,15 +34,20 @@ static void clear_obstacles(Scene* s)
     s->obstacleCount = 0;
 }
 
-static float rand_float(float min, float max)
+static void clear_coins(Scene* s)
 {
-    return min + ((float)rand() / (float)RAND_MAX) * (max - min);
+    free(s->coins);
+    s->coins     = NULL;
+    s->coinCount = 0;
 }
 
-/* Egyetlen akadály felhelyezése                                           */
+static float rand_float(float min, float max)
+{
+    return min + ((float)rand() / RAND_MAX) * (max - min);
+}
+
 static void spawn_obstacle(Scene* s)
 {
-    /* köv. akadály X 20-25 egységgel előrébb */
     s->nextObstacleX += rand_float(20.0f, 25.0f);
 
     vec3 size = {
@@ -66,14 +68,26 @@ static void spawn_obstacle(Scene* s)
                            sizeof(Obstacle) * s->obstacleCount);
 
     init_obstacle(&s->obstacles[s->obstacleCount - 1],
-                  pos,
-                  size,
-                  s->player.score);
+                  pos, size, s->player.score);
 }
 
-/* ---------------------------------------------------------------------- */
-/*                             Scene-kezelés                              */
-/* ---------------------------------------------------------------------- */
+static void spawn_coin(Scene* s)
+{
+    s->nextCoinX += rand_float(8.0f, 12.0f);
+
+    vec3 pos;
+    pos.x = s->nextCoinX;
+    pos.y = s->player.box.size.y * 0.5f + 0.5f;
+
+    float hw = s->ground.halfWidth;
+    pos.z = rand_float(-hw + 0.6f, hw - 0.6f);
+
+    s->coinCount++;
+    s->coins = realloc(s->coins,
+                       sizeof(Coin) * s->coinCount);
+
+    init_coin(&s->coins[s->coinCount - 1], pos);
+}
 
 void init_scene(Scene* s)
 {
@@ -82,27 +96,27 @@ void init_scene(Scene* s)
     float cube  = 1.0f;
     float halfH = cube * 0.5f;
 
-    /* játékos */
     init_player(&s->player,
                 (vec3){0.0f, halfH, 0.0f},
-                cube,
-                8.0f,      /* side move speed */
-                40.0f,     /* max side speed  */
-                0.1f);     /* lerp factor     */
+                cube, 8.0f, 40.0f, 0.1f);
     s->player.forwardSpeed = 4.0f;
 
-    /* talaj textúrával */
     init_ground(&s->ground,
                 cube * 20.0f,
                 "assets/ground.bmp");
 
-    s->obstacles      = NULL;
-    s->obstacleCount  = 0;
-    s->nextObstacleX  = s->player.box.position.x + 20.0f;
-
-    while (s->nextObstacleX <
-           s->player.box.position.x + INITIAL_OBSTACLE_REGION) {
+    s->obstacles     = NULL;
+    s->obstacleCount = 0;
+    s->nextObstacleX = s->player.box.position.x + 20.0f;
+    while (s->nextObstacleX < s->player.box.position.x + INITIAL_OBSTACLE_REGION) {
         spawn_obstacle(s);
+    }
+
+    s->coins      = NULL;
+    s->coinCount  = 0;
+    s->nextCoinX  = s->player.box.position.x + 8.0f;
+    while (s->nextCoinX < s->player.box.position.x + INITIAL_OBSTACLE_REGION) {
+        spawn_coin(s);
     }
 }
 
@@ -112,18 +126,24 @@ void reset_scene(Scene* s)
     vec3  start = {0.0f, halfH, 0.0f};
 
     clear_obstacles(s);
+    clear_coins(s);
 
     s->player.box.position = start;
     s->player.forwardSpeed = 4.0f;
     s->player.score        = 0;
+    s->player.coins        = 0;
 
     s->nextObstacleX = start.x + 20.0f;
     while (s->nextObstacleX < start.x + INITIAL_OBSTACLE_REGION) {
         spawn_obstacle(s);
     }
+
+    s->nextCoinX = start.x + 8.0f;
+    while (s->nextCoinX < start.x + INITIAL_OBSTACLE_REGION) {
+        spawn_coin(s);
+    }
 }
 
-/* Fő logikai frissítés – true: game over                                  */
 bool update_scene(Scene* s, double dt)
 {
     update_player(&s->player, dt);
@@ -137,34 +157,62 @@ bool update_scene(Scene* s, double dt)
             return true;
     }
 
-    /* feleslegessé vált akadályok kidobása */
-    int write = 0;
+    int writeO = 0;
     for (int i = 0; i < s->obstacleCount; ++i) {
         if (s->obstacles[i].box.position.x >=
             s->player.box.position.x - 10.0f)
         {
-            s->obstacles[write++] = s->obstacles[i];
+            s->obstacles[writeO++] = s->obstacles[i];
         }
     }
-    s->obstacleCount = write;
+    s->obstacleCount = writeO;
     s->obstacles = realloc(s->obstacles,
                            sizeof(Obstacle) * s->obstacleCount);
 
-    /* előre új akadályok */
     while (s->nextObstacleX <
            s->player.box.position.x + INITIAL_OBSTACLE_REGION) {
         spawn_obstacle(s);
+    }
+
+    for (int i = 0; i < s->coinCount; ++i) {
+        update_coin(&s->coins[i], dt);
+    }
+
+    int writeC = 0;
+    for (int i = 0; i < s->coinCount; ++i) {
+        bool remove = false;
+        if (check_coin_collision(&s->coins[i], &s->player)) {
+            s->player.coins++;
+            remove = true;
+        } else if (s->coins[i].position.x <
+                   s->player.box.position.x - 10.0f)
+        {
+            remove = true;
+        }
+        if (!remove) {
+            s->coins[writeC++] = s->coins[i];
+        }
+    }
+    s->coinCount = writeC;
+    s->coins = realloc(s->coins,
+                       sizeof(Coin) * s->coinCount);
+
+    while (s->nextCoinX <
+           s->player.box.position.x + INITIAL_OBSTACLE_REGION) {
+        spawn_coin(s);
     }
 
     s->player.score = (long)floorf(s->player.box.position.x);
     return false;
 }
 
-/* Rajzolás                                                                */
 void render_scene(const Scene* s)
 {
     draw_ground(&s->ground, s->player.box.position.x);
 
+    for (int i = 0; i < s->coinCount; ++i) {
+        draw_coin(&s->coins[i]);
+    }
     for (int i = 0; i < s->obstacleCount; ++i) {
         draw_obstacle(&s->obstacles[i]);
     }
