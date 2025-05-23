@@ -4,6 +4,8 @@
 #include "obstacle.h"
 #include "coin.h"
 #include "ground.h"
+#include "skybox.h"
+#include "camera.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -208,6 +210,8 @@ bool update_scene(Scene* s, double dt)
 
 void render_scene(const Scene* s)
 {
+    draw_skybox(globalCamera.position);
+
     draw_ground(&s->ground, s->player.box.position.x);
 
     for (int i = 0; i < s->coinCount; ++i) {

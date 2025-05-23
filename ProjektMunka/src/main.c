@@ -6,6 +6,8 @@ int main(int argc, char* argv[])
     SDL_Event event;
 
     init_app(&app, 800, 600);
+
+
     while (!app.quit) {
         while (SDL_PollEvent(&event))
             handle_app_events(&app, &event);

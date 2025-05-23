@@ -11,6 +11,7 @@ SRC      := \
     src/rectangular_prism.c \
     src/player.c \
     src/ground.c \
+    src/skybox.c \
     src/obstacle.c \
     src/menu.c \
     src/gameover.c \
