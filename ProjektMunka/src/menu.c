@@ -1,10 +1,11 @@
 #include "menu.h"
 #include "app.h"
+#include "font.h"
 #include "rectangular_prism.h"
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <string.h>
 
-/* ------------------------------------------------ helpers */
 static void ortho2D(int w, int h) {
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -22,22 +23,21 @@ static void ortho2D_pop(void) {
     glPopMatrix();
 }
 
-static void draw_quad(const SDL_Rect* r, float rCol, float gCol, float bCol) {
-    glColor3f(rCol, gCol, bCol);
+static void draw_quad(const SDL_Rect* r, float red, float green, float blue) {
+    glColor3f(red, green, blue);
     glBegin(GL_QUADS);
-    glVertex2f(r->x,        r->y);
+    glVertex2f(r->x, r->y);
     glVertex2f(r->x + r->w, r->y);
     glVertex2f(r->x + r->w, r->y + r->h);
-    glVertex2f(r->x,        r->y + r->h);
+    glVertex2f(r->x, r->y + r->h);
     glEnd();
 }
 
-/* ------------------------------------------------ public */
 void init_menu(Menu* m, int w, int h) {
-    int bw = 240, bh = 64;
-    m->startBtn = (SDL_Rect){ (w - bw) / 2, h / 2 + 80,  bw, bh };
-    m->quitBtn  = (SDL_Rect){ (w - bw) / 2, h / 2 + 160, bw, bh };
-    m->infoBtn  = (SDL_Rect){ w - 180,         20,       160, 48 };
+    int btnW = 240, btnH = 64;
+    m->startBtn = (SDL_Rect){ (w - btnW) / 2, h / 2 + 80,  btnW, btnH };
+    m->quitBtn = (SDL_Rect){ (w - btnW) / 2, h / 2 + 160, btnW, btnH };
+    m->infoBtn = (SDL_Rect){ w - 180,         20,        160,   48 };
     m->cubeAngle = 0.0f;
 }
 
@@ -67,7 +67,6 @@ bool menu_handle_event(Menu* m, struct App* app, const SDL_Event* e) {
 }
 
 void render_menu(const Menu* m, int w, int h) {
-    /* 3D cube logo */
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -81,8 +80,12 @@ void render_menu(const Menu* m, int w, int h) {
 
     RectangularPrism cube;
     init_rectangular_prism(&cube, 1.8f, 1.8f, 1.8f,
-                           (Color){1.0f, 0.0f, 0.0f},
-                           (vec3){0, 0, 0});
+        (Color) {
+        1.0f, 0.0f, 0.0f
+    },
+        (vec3) {
+        0, 0, 0
+    });
     draw_rectangular_prism(&cube);
 
     glPopMatrix();
@@ -90,21 +93,41 @@ void render_menu(const Menu* m, int w, int h) {
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
 
-    /* 2D UI */
     glDisable(GL_DEPTH_TEST);
     ortho2D(w, h);
 
     glColor3f(1.0f, 0.0f, 0.0f);
-    render_text("Cubestacle", w, h, w/2 - 120, 60);
+    render_text("Cubestacle", w, h, w / 2 - 120, 60);
 
     draw_quad(&m->startBtn, 0.8f, 0.8f, 0.8f);
-    draw_quad(&m->infoBtn,  0.8f, 0.8f, 0.8f);
-    draw_quad(&m->quitBtn,  0.8f, 0.8f, 0.8f);
+    draw_quad(&m->infoBtn, 0.8f, 0.8f, 0.8f);
+    draw_quad(&m->quitBtn, 0.8f, 0.8f, 0.8f);
 
     glColor3f(0.0f, 0.0f, 0.0f);
-    render_text("Start", w, h, m->startBtn.x + 70, m->startBtn.y + 22);
-    render_text("Info",  w, h, m->infoBtn.x  + 55, m->infoBtn.y  + 15);
-    render_text("Quit",  w, h, m->quitBtn.x  + 80, m->quitBtn.y  + 22);
+    const int charWidth = 24;
+    const int charHeight = 48;
+
+    {
+        const char* label = "Start";
+        int textW = (int)strlen(label) * charWidth;
+        float textX = m->startBtn.x + (m->startBtn.w - textW) * 0.5f;
+        float textY = m->startBtn.y + (m->startBtn.h + charHeight) * 0.5f;
+        render_text(label, w, h, textX, textY);
+    }
+    {
+        const char* label = "Info";
+        int textW = (int)strlen(label) * charWidth;
+        float textX = m->infoBtn.x + (m->infoBtn.w - textW) * 0.5f;
+        float textY = m->infoBtn.y + (m->infoBtn.h + charHeight) * 0.5f;
+        render_text(label, w, h, textX, textY);
+    }
+    {
+        const char* label = "Quit";
+        int textW = (int)strlen(label) * charWidth;
+        float textX = m->quitBtn.x + (m->quitBtn.w - textW) * 0.5f;
+        float textY = m->quitBtn.y + (m->quitBtn.h + charHeight) * 0.5f;
+        render_text(label, w, h, textX, textY);
+    }
 
     ortho2D_pop();
     glEnable(GL_DEPTH_TEST);

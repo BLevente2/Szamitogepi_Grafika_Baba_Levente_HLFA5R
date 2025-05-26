@@ -1,18 +1,18 @@
 #ifndef COIN_H
 #define COIN_H
 
-#include <stdbool.h>          /* bool, true, false */
+#include "types.h"
 #include "rectangular_prism.h"
 #include "player.h"
 
 typedef struct {
-    RectangularPrism hitbox;
-    vec3  position;
     float radius;
     float thickness;
+    vec3  position;
     float rotationY;
     float bobPhase;
     float baseY;
+    RectangularPrism hitbox;
 } Coin;
 
 void init_coin(Coin* c, vec3 pos);

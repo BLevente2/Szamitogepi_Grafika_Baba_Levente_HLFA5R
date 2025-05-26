@@ -4,8 +4,11 @@ CFLAGS   := -Iinclude -Wall -Wextra -Wpedantic -std=c99
 SRC      := \
     src/app.c \
     src/camera.c \
+    src/control.c \
     src/coin.c \
+    src/font.c \
     src/main.c \
+    src/physics.c \
     src/scene.c \
     src/utils.c \
     src/rectangular_prism.c \

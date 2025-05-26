@@ -1,40 +1,46 @@
 #include "player.h"
-#include <SDL2/SDL.h>
 
 void init_player(Player* p,
-                 vec3    startPos,
-                 float   cubeSize,
-                 float   lateralSpeed,
-                 float   maxForwardSpeed,
-                 float   forwardAcceleration)
+    vec3    startPos,
+    float   cubeSize,
+    float   lateralSpeed,
+    float   maxForwardSpeed,
+    float   forwardAcceleration)
 {
-    Color red = {1.0f, 0.0f, 0.0f};
+    Color red = { 1.0f, 0.0f, 0.0f };
     init_rectangular_prism(&p->box, cubeSize, cubeSize, cubeSize, red, startPos);
-    p->score               = 0;
-    p->coins               = 0;                // coin-ok száma kezdetben nulla
-    p->lateralSpeed        = lateralSpeed;
-    p->forwardSpeed        = 0.0f;
-    p->maxForwardSpeed     = maxForwardSpeed;
+    p->velocity = (vec3){ 5.0f, 0.0f, 0.0f };
+    p->mass = 1.0f;
+    p->onGround = true;
+    p->lateralSpeed = lateralSpeed;
+    p->maxForwardSpeed = maxForwardSpeed;
     p->forwardAcceleration = forwardAcceleration;
+    p->score = 0;
+    p->coins = 0;
 }
 
-void update_player(Player* p, double dt)
+void update_player(Player* p, double dt, float lateralInput)
 {
-    // Előremeneti sebesség frissítése
-    p->forwardSpeed += p->forwardAcceleration * (float)dt;
-    if (p->forwardSpeed > p->maxForwardSpeed)
-        p->forwardSpeed = p->maxForwardSpeed;
+    p->velocity.x += p->forwardAcceleration * (float)dt;
+    if (p->velocity.x > p->maxForwardSpeed)
+        p->velocity.x = p->maxForwardSpeed;
+    p->velocity.z = lateralInput * p->lateralSpeed;
+    if (!p->onGround)
+        p->velocity.y -= 9.81f * (float)dt;
 
-    // Mozgás előre
-    p->box.position.x += p->forwardSpeed * (float)dt;
+    p->box.position.x += p->velocity.x * (float)dt;
+    p->box.position.y += p->velocity.y * (float)dt;
+    p->box.position.z += p->velocity.z * (float)dt;
 
-    // Oldalirányú mozgatás balra/jobbra
-    const Uint8* keys = SDL_GetKeyboardState(NULL);
-    float delta = p->lateralSpeed * (float)dt;
-    if (keys[SDL_SCANCODE_LEFT]  || keys[SDL_SCANCODE_A])
-        p->box.position.z -= delta;
-    if (keys[SDL_SCANCODE_RIGHT] || keys[SDL_SCANCODE_D])
-        p->box.position.z += delta;
+    float floorY = p->box.size.y * 0.5f;
+    if (p->box.position.y < floorY) {
+        p->box.position.y = floorY;
+        p->velocity.y = 0.0f;
+        p->onGround = true;
+    }
+    else {
+        p->onGround = false;
+    }
 }
 
 void draw_player(const Player* p)
