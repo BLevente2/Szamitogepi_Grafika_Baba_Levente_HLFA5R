@@ -4,6 +4,7 @@
 #include "types.h"
 #include "rectangular_prism.h"
 #include "player.h"
+#include "model.h"
 
 typedef struct {
     float radius;
@@ -15,6 +16,8 @@ typedef struct {
     RectangularPrism hitbox;
 } Coin;
 
+void load_coin_model(const char* path);
+void unload_coin_model(void);
 void init_coin(Coin* c, vec3 pos);
 void update_coin(Coin* c, double dt);
 void draw_coin(const Coin* c);

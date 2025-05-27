@@ -67,12 +67,13 @@ static void spawn_coin(Scene* s) {
 }
 
 void init_scene(Scene* s) {
+    load_coin_model("assets/models/coin.obj");
     srand((unsigned)time(NULL));
     float cube = 1.0f;
     float halfH = cube * 0.5f;
-    init_player(&s->player, (vec3) { 0.0f, halfH, 0.0f }, cube, 8.0f, 100.0f, 0.5f);
+    init_player(&s->player, (vec3){0.0f, halfH, 0.0f}, cube, 8.0f, 100.0f, 0.5f);
     s->player.velocity.x = 5.0f;
-    init_ground(&s->ground, cube * 20.0f, "assets/ground.bmp");
+    init_ground(&s->ground, cube * 20.0f, "assets/textures/ground.bmp");
     s->obstacles = NULL;
     s->obstacleCount = 0;
     s->nextObstacleX = s->player.box.position.x + 20.0f;
@@ -89,11 +90,11 @@ void init_scene(Scene* s) {
 
 void reset_scene(Scene* s) {
     float halfH = s->player.box.size.y * 0.5f;
-    vec3 start = { 0.0f, halfH, 0.0f };
+    vec3 start = {0.0f, halfH, 0.0f};
     clear_obstacles(s);
     clear_coins(s);
     s->player.box.position = start;
-    s->player.velocity = (vec3){ 5.0f, 0.0f, 0.0f };
+    s->player.velocity = (vec3){5.0f, 0.0f, 0.0f};
     s->player.onGround = true;
     s->player.score = 0;
     s->player.coins = 0;
@@ -115,8 +116,7 @@ bool update_scene(Scene* s, double dt, float lateralInput) {
             update_obstacle(&s->obstacles[i], dt);
         if (s->lostTimer >= 2.0)
             return true;
-    }
-    else {
+    } else {
         update_player(&s->player, dt, lateralInput);
         for (int i = 0; i < s->obstacleCount; ++i)
             update_obstacle(&s->obstacles[i], dt);
@@ -124,8 +124,7 @@ bool update_scene(Scene* s, double dt, float lateralInput) {
             s->player.velocity.x = 0.0f;
             s->lost = true;
             s->lostTimer = 0.0;
-        }
-        else {
+        } else {
             for (int i = 0; i < s->obstacleCount; ++i) {
                 if (player_hits_obstacle(&s->player, &s->obstacles[i])) {
                     s->obstacles[i].velocity.x = s->player.velocity.x * 0.5f;
@@ -154,8 +153,7 @@ bool update_scene(Scene* s, double dt, float lateralInput) {
         if (check_coin_collision(&s->coins[i], &s->player)) {
             s->player.coins++;
             remove = true;
-        }
-        else if (s->coins[i].position.x < s->player.box.position.x - 10.0f) {
+        } else if (s->coins[i].position.x < s->player.box.position.x - 10.0f) {
             remove = true;
         }
         if (!remove)

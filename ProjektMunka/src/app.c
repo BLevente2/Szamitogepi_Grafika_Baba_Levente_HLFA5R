@@ -1,6 +1,7 @@
 #include "app.h"
 #include "font.h"
 #include "control.h"
+#include "coin.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -14,10 +15,8 @@
 #include <string.h>
 #include <math.h>
 
-/* forward declaration */
 static void draw_score(const App* app);
 
-/* ----- OpenGL helper ----- */
 static void init_opengl(int w, int h) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -29,7 +28,6 @@ static void reshape(int w, int h) {
     init_opengl(w, h);
 }
 
-/* ----- Initialization ----- */
 void init_app(App* app, int width, int height) {
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
@@ -71,7 +69,6 @@ void init_app(App* app, int width, int height) {
     app->uptime = SDL_GetTicks() / 1000.0;
 }
 
-/* ----- Event handling ----- */
 void handle_app_events(App* app, SDL_Event* e) {
     if (e->type == SDL_QUIT) {
         app->quit = true;
@@ -111,7 +108,6 @@ void handle_app_events(App* app, SDL_Event* e) {
     }
 }
 
-/* ----- Update ----- */
 void update_app(App* app) {
     double now = SDL_GetTicks() / 1000.0;
     double dt = now - app->uptime;
@@ -135,7 +131,6 @@ void update_app(App* app) {
     }
 }
 
-/* ----- Render ----- */
 void render_app(App* app) {
     const GLfloat fogC[4] = { 0.529f, 0.808f, 0.922f, 1.0f };
     glClearColor(fogC[0], fogC[1], fogC[2], 1.0f);
@@ -169,7 +164,6 @@ void render_app(App* app) {
     SDL_GL_SwapWindow(app->window);
 }
 
-/* ----- HUD: score + coins ----- */
 static void draw_score(const App* app) {
     int w, h;
     SDL_GetWindowSize(app->window, &w, &h);
@@ -193,10 +187,10 @@ static void draw_score(const App* app) {
     if (depthWas) glEnable(GL_DEPTH_TEST);
 }
 
-/* ----- Cleanup ----- */
 void destroy_app(App* app) {
     if (app->gl_context) SDL_GL_DeleteContext(app->gl_context);
     if (app->window)     SDL_DestroyWindow(app->window);
+    unload_coin_model();
     IMG_Quit();
     SDL_Quit();
 }
