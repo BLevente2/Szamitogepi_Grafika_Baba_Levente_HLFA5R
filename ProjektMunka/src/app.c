@@ -15,6 +15,8 @@
 #include <string.h>
 #include <math.h>
 
+static const GLfloat baseFogColor[3] = { 0.529f, 0.808f, 0.922f };
+
 static void draw_score(const App* app);
 
 static void init_opengl(int w, int h) {
@@ -50,7 +52,7 @@ void init_app(App* app, int width, int height) {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_LINEAR);
-    const GLfloat fogC[4] = { 0.529f, 0.808f, 0.922f, 1.0f };
+    const GLfloat fogC[4] = { baseFogColor[0], baseFogColor[1], baseFogColor[2], 1.0f };
     glFogfv(GL_FOG_COLOR, fogC);
     glFogf(GL_FOG_START, 20.0f);
     glFogf(GL_FOG_END, 100.0f);
@@ -67,6 +69,7 @@ void init_app(App* app, int width, int height) {
     init_control(&app->control);
 
     app->uptime = SDL_GetTicks() / 1000.0;
+    app->brightness = 1.0f;
 }
 
 void handle_app_events(App* app, SDL_Event* e) {
@@ -99,12 +102,22 @@ void handle_app_events(App* app, SDL_Event* e) {
         gameover_handle_event(&app->gameover, app, e);
     }
     else if (app->state == STATE_PLAYING && e->type == SDL_KEYDOWN) {
-        SDL_Keycode k = e->key.keysym.sym;
-        if (k == SDLK_ESCAPE)                     app->state = STATE_MENU;
-        else if (k == SDLK_w || k == SDLK_UP)      adjust_camera_angle(+0.05f);
-        else if (k == SDLK_s || k == SDLK_DOWN)    adjust_camera_angle(-0.05f);
-        else if (k == SDLK_PLUS || k == SDLK_KP_PLUS)  adjust_camera_radius(+1.0f);
-        else if (k == SDLK_MINUS || k == SDLK_KP_MINUS) adjust_camera_radius(-1.0f);
+        if (app->control.brightnessDecrease) {
+            app->brightness -= BRIGHTNESS_DELTA;
+            if (app->brightness < BRIGHTNESS_MIN) app->brightness = BRIGHTNESS_MIN;
+        }
+        else if (app->control.brightnessIncrease) {
+            app->brightness += BRIGHTNESS_DELTA;
+            if (app->brightness > BRIGHTNESS_MAX) app->brightness = BRIGHTNESS_MAX;
+        }
+        else {
+            SDL_Keycode k = e->key.keysym.sym;
+            if (k == SDLK_ESCAPE) app->state = STATE_MENU;
+            else if (k == SDLK_w || k == SDLK_UP) adjust_camera_angle(+0.05f);
+            else if (k == SDLK_s || k == SDLK_DOWN) adjust_camera_angle(-0.05f);
+            else if (k == SDLK_PLUS || k == SDLK_KP_PLUS) adjust_camera_radius(+1.0f);
+            else if (k == SDLK_MINUS || k == SDLK_KP_MINUS) adjust_camera_radius(-1.0f);
+        }
     }
 }
 
@@ -132,7 +145,12 @@ void update_app(App* app) {
 }
 
 void render_app(App* app) {
-    const GLfloat fogC[4] = { 0.529f, 0.808f, 0.922f, 1.0f };
+    GLfloat fogC[4] = {
+        baseFogColor[0] * app->brightness,
+        baseFogColor[1] * app->brightness,
+        baseFogColor[2] * app->brightness,
+        1.0f
+    };
     glClearColor(fogC[0], fogC[1], fogC[2], 1.0f);
     glFogfv(GL_FOG_COLOR, fogC);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -189,7 +207,7 @@ static void draw_score(const App* app) {
 
 void destroy_app(App* app) {
     if (app->gl_context) SDL_GL_DeleteContext(app->gl_context);
-    if (app->window)     SDL_DestroyWindow(app->window);
+    if (app->window) SDL_DestroyWindow(app->window);
     unload_coin_model();
     IMG_Quit();
     SDL_Quit();
