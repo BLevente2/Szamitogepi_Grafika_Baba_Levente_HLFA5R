@@ -1,4 +1,5 @@
 #include "scene.h"
+#include "config.h"
 #include "rectangular_prism.h"
 #include "player.h"
 #include "obstacle.h"
@@ -67,13 +68,13 @@ static void spawn_coin(Scene* s) {
 }
 
 void init_scene(Scene* s) {
-    load_coin_model("assets/models/coin.obj");
+    load_coin_model(ASSET_PATH("models" PATH_SEP "coin.obj"));
     srand((unsigned)time(NULL));
     float cube = 1.0f;
     float halfH = cube * 0.5f;
     init_player(&s->player, (vec3){0.0f, halfH, 0.0f}, cube, 8.0f, 100.0f, 0.5f);
     s->player.velocity.x = 5.0f;
-    init_ground(&s->ground, cube * 20.0f, "assets/textures/ground.bmp");
+    init_ground(&s->ground, cube * 20.0f, ASSET_PATH("textures" PATH_SEP "ground.bmp"));
     s->obstacles = NULL;
     s->obstacleCount = 0;
     s->nextObstacleX = s->player.box.position.x + 20.0f;
@@ -123,14 +124,14 @@ bool update_scene(Scene* s, double dt, float lateralInput) {
         if (is_player_off_ground(&s->ground, &s->player)) {
             s->player.velocity.x = 0.0f;
             s->lost = true;
-            s->lostTimer = 0.0;
+            s->lostTimer = 0.0f;
         } else {
             for (int i = 0; i < s->obstacleCount; ++i) {
                 if (player_hits_obstacle(&s->player, &s->obstacles[i])) {
                     s->obstacles[i].velocity.x = s->player.velocity.x * 0.5f;
                     s->player.velocity.x = 0.0f;
                     s->lost = true;
-                    s->lostTimer = 0.0;
+                    s->lostTimer = 0.0f;
                     break;
                 }
             }
