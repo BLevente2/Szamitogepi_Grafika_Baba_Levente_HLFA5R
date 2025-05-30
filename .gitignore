@@ -4,7 +4,7 @@
 # Object files
 *.o
 *.ko
-*.obj
+# *.obj  <-- eltávolítva
 *.elf
 
 # Linker output
@@ -29,7 +29,7 @@
 *.dylib
 
 # Executables
-*.exe
+# *.exe  <-- eltávolítva
 *.out
 *.app
 *.i*86
